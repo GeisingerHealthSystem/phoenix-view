@@ -2,6 +2,7 @@ package com.github.randerzander.view;
 
 import org.apache.ambari.view.ViewContext;
 
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 import javax.servlet.ServletConfig;
@@ -11,28 +12,35 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.sql.*;
 import org.apache.phoenix.jdbc.PhoenixDriver;
 
-import java.io.BufferedReader;
 import java.util.Map;
 import java.util.Properties;
-import java.io.InputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
 
 public class Services extends HttpServlet {
     private ViewContext viewContext;
     private Connection connection;
+    private Properties aProperties;
+    final Logger logger = Logger.getRootLogger();
 
     @Override
     public void init(ServletConfig config) throws ServletException {
       super.init(config);
 
       ServletContext context = config.getServletContext();
-      viewContext = (ViewContext) context.getAttribute(ViewContext.CONTEXT_ATTRIBUTE);
-
+//      viewContext = (ViewContext) context.getAttribute(ViewContext.CONTEXT_ATTRIBUTE);
+       aProperties = new Properties();
+       try{
+         aProperties.load(new FileInputStream("phoenix-view.properties"));
+       }catch (IOException e){
+         aProperties.setProperty("jdbc.url","gdchdpmn02drlx.geisinger.edu:2181:/hbase-secure");
+         aProperties.setProperty("phoenix.user","cdis_sys_dev");
+         aProperties.setProperty("phoenix.password","Swukad&KAJesw5Dr");
+         logger.warn("File Not found : Using default values");
+       }
       System.err.println("Trying to start view!");
       try {
         Class.forName("org.apache.phoenix.jdbc.PhoenixDriver");
@@ -41,8 +49,7 @@ public class Services extends HttpServlet {
         System.exit(1);
       }
       try {
-        Map<String, String> viewProps = this.viewContext.getProperties();
-        connection = DriverManager.getConnection(viewProps.get("jdbc.url"), "", "");
+        connection = DriverManager.getConnection(aProperties.getProperty("jdbc.url"), aProperties.getProperty("phoenix.user"), aProperties.getProperty("phoenix.password"));
       } catch (SQLException e) { e.printStackTrace(); }
     }
 
